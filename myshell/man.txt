@@ -1,0 +1,160 @@
+欢迎使用MyShell的使用手册和指南
+
+本程序实现了在乌班图系统中的mini Shell，该shell支持如下功能：
+1、通过自定义函数实现了部分的内建命令
+2、通过execvp函数实现了外部命令的调用
+
+一、运行指南
+想要运行myshell，你需要在linux系统下，编译运行三个文件，可以使用vscode运行该项目。
+为了配置vscode的运行环境，你需要配置如下三个文件（这是一种可行的文件，你可以选择使用其他的配置）：
+1、launch.json：
+{
+    "configurations": [
+        {
+            "name": "C/C++: g++ 生成和调试活动文件",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "将反汇编风格设置为 Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: g++ 生成活动文件",
+            "miDebuggerPath": "/usr/bin/gdb"
+        }
+    ],
+    "version": "2.0.0"
+}
+2、settings.json：
+{
+    "files.associations": {
+        "string": "cpp",
+        "*.tcc": "cpp",
+        "compare": "cpp",
+        "type_traits": "cpp",
+        "iosfwd": "cpp",
+        "iostream": "cpp",
+        "vector": "cpp",
+        "new": "cpp",
+        "ostream": "cpp",
+        "iomanip": "cpp"
+    }
+}
+3、tasks.json：
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "C/C++: g++ 生成活动文件",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "调试器生成的任务。"
+        }
+    ],
+    "version": "2.0.0"
+}
+
+二、Myshell的工程架构：
+
+1、MyShell的主要模块：
+myshell是由一个语法解析器和一个命令执行器组成，语法解析器负责解析语法，而命令执行器负责执行解析出的命令。
+对于使用者输入的命令，解析器将首先按照“;”分割，然后用空格、回车和制表符分割，其中;分割出命令组，而后者分割出具体的命令
+对于分割出的命令，我使用 | 对命令再次分割，注意，在使用者输入 | 时，需要在 “|” 之前和之后保留空格，否则将解析命令错误。
+在上述模块的作用下，会发生如下行为：假设输入 "ls -l | head -2 | wc -l ; time; echo a",会被解析为：
+第一组：“ls -l  head -2  wc -l”（一定要在管道符前后保留空格！！！）
+第二组：time
+第三组：echo a
+然后依次执行三组命令
+
+2、Myshell支持的功能：
+
+在语法解析器和执行器下，Myshell可以支持后台运行操作（以&为命令标志），可以支持挂起操作（捕获SIGSTOP信号），可以支持进程的前后台切换，也可以支持将存有命令的文件作为输入
+
+三、Myshell 的命令手册：(下面是自定义的命令执行，对于其他外部命令，参考官方的shell手册，如ls -l等)
+
+1. bg命令
+解释：后台执行一个挂起的后台进程，支持bg和bg %n两种格式
+范例：bg bg %1
+2. cd命令
+解释：无参数显示当前目录，有参数切换文件目录并更改环境变量
+范例：cd    
+范例：cd <dir>
+3. clr命令
+解释：清理当前屏幕内容
+范例：clr
+4. dir命令
+解释：无参数显示当前文件夹内容，有参数显示参数文件夹内容，支持 -A，-l，-a选项，但三种选项每次最多输入一个
+范例：dir   
+范例：dir <dir> 
+范例：dir -l <dir>
+5. echo命令
+解释：显示参数内容
+范例：echo Hello World
+6. exec命令
+解释：使用参数命令代替当前进程
+范例：exec ls -l
+7. exit
+解释：退出shell
+范例：exit
+8. fg
+解释：将后台进程转到前台执行,支持fg和fg %n两种格式
+范例：fg
+9. help
+解释：输出用户手册并使用more进行控制
+范例：help
+10. jobs
+解释：显示所有的后台进程及其状态
+范例：jobs
+11. pwd
+解释：显示当前路径
+范例：pwd
+12. set
+解释：显示所有的环境变量
+范例：set  
+13. test
+解释：比较字符串或数字之间的大小关系是否成立
+范例：test aaa = aaa
+范例：test bbb != aaa
+范例：test 1 -eq 1
+范例：test 1 -ne 2
+范例：test 1 -lt 1
+范例：test 1 -gt 1
+范例：test 1 -le 1
+范例：test 1 -ge 1
+14. time
+解释：输出当前系统时间
+范例：time
+15. umask
+解释：无参数时显示当前掩码，有参数则设置掩码为参数
+范例：umask
+范例：umask 0666
